@@ -36,7 +36,6 @@ client.once('ready', async () => {
     console.log(`[READY] Bot działa jako ${client.user.tag}`);
 
     const commands = [
-        // ===== VOICE =====
         new SlashCommandBuilder()
             .setName('removevoicechannel')
             .setDescription('Usuwa Twój prywatny VC'),
@@ -63,7 +62,6 @@ client.once('ready', async () => {
                    )
             ),
 
-        // ===== TEXT =====
         new SlashCommandBuilder()
             .setName('createtextchannel')
             .setDescription('Tworzy prywatny kanał tekstowy'),
@@ -112,7 +110,6 @@ client.on('interactionCreate', async interaction => {
     const vc = guild.channels.cache.get(userVoiceChannelMap.get(user.id));
     const tc = guild.channels.cache.get(userTextChannelMap.get(user.id));
 
-    // ===== VOICE REMOVE =====
     if (commandName === 'removevoicechannel') {
         if (!vc) return interaction.reply({ content: 'Nie masz VC', ephemeral: true });
         await interaction.reply({ content: 'Usunięto VC', ephemeral: true });
@@ -120,7 +117,6 @@ client.on('interactionCreate', async interaction => {
         userVoiceChannelMap.delete(user.id);
     }
 
-    // ===== VOICE EDIT =====
     if (commandName === 'editvoicechannel') {
         if (!vc) return interaction.reply({ content: 'Nie masz VC', ephemeral: true });
 
@@ -138,7 +134,6 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // ===== TEXT CREATE =====
     if (commandName === 'createtextchannel') {
         if (tc) return interaction.reply({ content: 'Masz już kanał', ephemeral: true });
         try {
@@ -159,7 +154,6 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // ===== TEXT DELETE =====
     if (commandName === 'deletetextchannel') {
         if (!tc) return interaction.reply({ content: 'Nie masz kanału', ephemeral: true });
         await interaction.reply({ content: 'Usunięto kanał', ephemeral: true });
@@ -167,7 +161,6 @@ client.on('interactionCreate', async interaction => {
         userTextChannelMap.delete(user.id);
     }
 
-    // ===== TEXT EDIT =====
     if (commandName === 'edittextchannel') {
         if (!tc) return interaction.reply({ content: 'Nie masz kanału', ephemeral: true });
 
@@ -189,9 +182,6 @@ client.on('interactionCreate', async interaction => {
 // ==================== VOICE AUTO ====================
 client.on('voiceStateUpdate', async (oldState, newState) => {
     try {
-        console.log('voiceStateUpdate fired', oldState.channelId, newState.channelId);
-
-        // Tworzenie nowego VC
         if (newState.channelId === TEMP_VC_CHANNEL_ID) {
             if (userVoiceChannelMap.has(newState.member.id)) return;
 
@@ -209,7 +199,6 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
             await newState.setChannel(channel);
         }
 
-        // Usuwanie pustego VC
         if (oldState.channel &&
             oldState.channel.parentId === VC_CATEGORY_ID &&
             oldState.channel.members.size === 0) {
@@ -219,6 +208,13 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         console.error('[voiceStateUpdate error]', err);
     }
 });
+
+// ==================== EXPRESS SERWER DO UPTIME ====================
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => res.send('Bot działa!'));
+app.listen(PORT, () => console.log(`Serwer pingowy na porcie ${PORT}`));
 
 // ==================== ERROR FIX ====================
 process.on('unhandledRejection', err => console.error('[UnhandledRejection]', err));
