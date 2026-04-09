@@ -1,4 +1,4 @@
-require('dotenv').config(); // require .env
+// ==================== BOT.JS ====================
 const { 
     Client, 
     GatewayIntentBits, 
@@ -10,7 +10,7 @@ const {
 } = require('discord.js');
 
 // ==================== KONFIG ====================
-const BOT_TOKEN = process.env.BOT_TOKEN; // trzymany w .env
+const BOT_TOKEN = process.env.BOT_TOKEN; // w Render ustawione jako Environment Variable
 const GUILD_ID = '1409881397857878079';
 
 const TEMP_VC_CHANNEL_ID = '1491471416342876293';
@@ -26,7 +26,8 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildMessages
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers
     ] 
 });
 
@@ -35,7 +36,7 @@ client.once('ready', async () => {
     console.log(`[READY] Bot działa jako ${client.user.tag}`);
 
     const commands = [
-        // VOICE
+        // ===== VOICE =====
         new SlashCommandBuilder()
             .setName('removevoicechannel')
             .setDescription('Usuwa Twój prywatny VC'),
@@ -46,15 +47,23 @@ client.once('ready', async () => {
             .addSubcommand(sub => 
                 sub.setName('adduser')
                    .setDescription('Dodaje użytkownika do VC')
-                   .addUserOption(opt => opt.setName('user').setRequired(true))
+                   .addUserOption(opt => 
+                       opt.setName('user')
+                          .setDescription('Użytkownik do dodania')
+                          .setRequired(true)
+                   )
             )
             .addSubcommand(sub => 
                 sub.setName('removeuser')
                    .setDescription('Usuwa użytkownika z VC')
-                   .addUserOption(opt => opt.setName('user').setRequired(true))
+                   .addUserOption(opt => 
+                       opt.setName('user')
+                          .setDescription('Użytkownik do usunięcia')
+                          .setRequired(true)
+                   )
             ),
 
-        // TEXT
+        // ===== TEXT =====
         new SlashCommandBuilder()
             .setName('createtextchannel')
             .setDescription('Tworzy prywatny kanał tekstowy'),
@@ -69,17 +78,24 @@ client.once('ready', async () => {
             .addSubcommand(sub => 
                 sub.setName('adduser')
                    .setDescription('Dodaje użytkownika do tekstowego kanału')
-                   .addUserOption(opt => opt.setName('user').setRequired(true))
+                   .addUserOption(opt => 
+                       opt.setName('user')
+                          .setDescription('Użytkownik do dodania')
+                          .setRequired(true)
+                   )
             )
             .addSubcommand(sub => 
                 sub.setName('removeuser')
                    .setDescription('Usuwa użytkownika z tekstowego kanału')
-                   .addUserOption(opt => opt.setName('user').setRequired(true))
+                   .addUserOption(opt => 
+                       opt.setName('user')
+                          .setDescription('Użytkownik do usunięcia')
+                          .setRequired(true)
+                   )
             )
     ].map(c => c.toJSON());
 
     const rest = new REST({ version: '10' }).setToken(BOT_TOKEN);
-
     try {
         await rest.put(Routes.applicationGuildCommands(client.user.id, GUILD_ID), { body: commands });
         console.log('[INFO] Komendy zarejestrowane');
@@ -93,7 +109,6 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     const { commandName, user, guild } = interaction;
-
     const vc = guild.channels.cache.get(userVoiceChannelMap.get(user.id));
     const tc = guild.channels.cache.get(userTextChannelMap.get(user.id));
 
@@ -101,7 +116,6 @@ client.on('interactionCreate', async interaction => {
     if (commandName === 'removevoicechannel') {
         if (!vc) return interaction.reply({ content: 'Nie masz VC', ephemeral: true });
         await interaction.reply({ content: 'Usunięto VC', ephemeral: true });
-
         try { await vc.delete(); } catch(err) { console.error(err); }
         userVoiceChannelMap.delete(user.id);
     }
@@ -112,7 +126,6 @@ client.on('interactionCreate', async interaction => {
 
         const sub = interaction.options.getSubcommand();
         const target = interaction.options.getUser('user');
-
         if (!target) return interaction.reply({ content: 'Nie znaleziono użytkownika', ephemeral: true });
 
         try {
@@ -128,7 +141,6 @@ client.on('interactionCreate', async interaction => {
     // ===== TEXT CREATE =====
     if (commandName === 'createtextchannel') {
         if (tc) return interaction.reply({ content: 'Masz już kanał', ephemeral: true });
-
         try {
             const channel = await guild.channels.create({
                 name: `${user.username}-text`,
@@ -139,7 +151,6 @@ client.on('interactionCreate', async interaction => {
                     { id: user.id, allow: [PermissionsBitField.Flags.ViewChannel] }
                 ]
             });
-
             userTextChannelMap.set(user.id, channel.id);
             await interaction.reply({ content: `Stworzono: ${channel}`, ephemeral: true });
         } catch(err) {
@@ -152,7 +163,6 @@ client.on('interactionCreate', async interaction => {
     if (commandName === 'deletetextchannel') {
         if (!tc) return interaction.reply({ content: 'Nie masz kanału', ephemeral: true });
         await interaction.reply({ content: 'Usunięto kanał', ephemeral: true });
-
         try { await tc.delete(); } catch(err) { console.error(err); }
         userTextChannelMap.delete(user.id);
     }
@@ -179,6 +189,8 @@ client.on('interactionCreate', async interaction => {
 // ==================== VOICE AUTO ====================
 client.on('voiceStateUpdate', async (oldState, newState) => {
     try {
+        console.log('voiceStateUpdate fired', oldState.channelId, newState.channelId);
+
         // Tworzenie nowego VC
         if (newState.channelId === TEMP_VC_CHANNEL_ID) {
             if (userVoiceChannelMap.has(newState.member.id)) return;
