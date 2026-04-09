@@ -1,4 +1,5 @@
-// ==================== BOT.JS ====================
+require('dotenv').config(); // odczyt z .env
+const express = require('express'); // serwer do pingowania
 const { 
     Client, 
     GatewayIntentBits, 
@@ -10,14 +11,13 @@ const {
 } = require('discord.js');
 
 // ==================== KONFIG ====================
-const BOT_TOKEN = process.env.BOT_TOKEN; // w Render ustawione jako Environment Variable
+const BOT_TOKEN = process.env.BOT_TOKEN; // Token bota ustaw w Render → Environment Variables
 const GUILD_ID = '1409881397857878079';
 
 const TEMP_VC_CHANNEL_ID = '1491471416342876293';
 const VC_CATEGORY_ID = '1491471869898002482';
 const TEXT_CATEGORY_ID = '1491501687716974684';
 
-// mapy przechowujące prywatne kanały
 const userVoiceChannelMap = new Map();
 const userTextChannelMap = new Map();
 
@@ -46,20 +46,12 @@ client.once('ready', async () => {
             .addSubcommand(sub => 
                 sub.setName('adduser')
                    .setDescription('Dodaje użytkownika do VC')
-                   .addUserOption(opt => 
-                       opt.setName('user')
-                          .setDescription('Użytkownik do dodania')
-                          .setRequired(true)
-                   )
+                   .addUserOption(opt => opt.setName('user').setDescription('Użytkownik do dodania').setRequired(true))
             )
             .addSubcommand(sub => 
                 sub.setName('removeuser')
                    .setDescription('Usuwa użytkownika z VC')
-                   .addUserOption(opt => 
-                       opt.setName('user')
-                          .setDescription('Użytkownik do usunięcia')
-                          .setRequired(true)
-                   )
+                   .addUserOption(opt => opt.setName('user').setDescription('Użytkownik do usunięcia').setRequired(true))
             ),
 
         new SlashCommandBuilder()
@@ -76,20 +68,12 @@ client.once('ready', async () => {
             .addSubcommand(sub => 
                 sub.setName('adduser')
                    .setDescription('Dodaje użytkownika do tekstowego kanału')
-                   .addUserOption(opt => 
-                       opt.setName('user')
-                          .setDescription('Użytkownik do dodania')
-                          .setRequired(true)
-                   )
+                   .addUserOption(opt => opt.setName('user').setDescription('Użytkownik do dodania').setRequired(true))
             )
             .addSubcommand(sub => 
                 sub.setName('removeuser')
                    .setDescription('Usuwa użytkownika z tekstowego kanału')
-                   .addUserOption(opt => 
-                       opt.setName('user')
-                          .setDescription('Użytkownik do usunięcia')
-                          .setRequired(true)
-                   )
+                   .addUserOption(opt => opt.setName('user').setDescription('Użytkownik do usunięcia').setRequired(true))
             )
     ].map(c => c.toJSON());
 
@@ -110,6 +94,7 @@ client.on('interactionCreate', async interaction => {
     const vc = guild.channels.cache.get(userVoiceChannelMap.get(user.id));
     const tc = guild.channels.cache.get(userTextChannelMap.get(user.id));
 
+    // ===== VOICE REMOVE =====
     if (commandName === 'removevoicechannel') {
         if (!vc) return interaction.reply({ content: 'Nie masz VC', ephemeral: true });
         await interaction.reply({ content: 'Usunięto VC', ephemeral: true });
@@ -117,6 +102,7 @@ client.on('interactionCreate', async interaction => {
         userVoiceChannelMap.delete(user.id);
     }
 
+    // ===== VOICE EDIT =====
     if (commandName === 'editvoicechannel') {
         if (!vc) return interaction.reply({ content: 'Nie masz VC', ephemeral: true });
 
@@ -134,6 +120,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
+    // ===== TEXT CREATE =====
     if (commandName === 'createtextchannel') {
         if (tc) return interaction.reply({ content: 'Masz już kanał', ephemeral: true });
         try {
@@ -154,6 +141,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
+    // ===== TEXT DELETE =====
     if (commandName === 'deletetextchannel') {
         if (!tc) return interaction.reply({ content: 'Nie masz kanału', ephemeral: true });
         await interaction.reply({ content: 'Usunięto kanał', ephemeral: true });
@@ -161,6 +149,7 @@ client.on('interactionCreate', async interaction => {
         userTextChannelMap.delete(user.id);
     }
 
+    // ===== TEXT EDIT =====
     if (commandName === 'edittextchannel') {
         if (!tc) return interaction.reply({ content: 'Nie masz kanału', ephemeral: true });
 
